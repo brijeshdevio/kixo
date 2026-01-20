@@ -2,3 +2,14 @@
 
 ### GET - /health
 GET {{BASE_URL}}/health
+
+
+### POST - /auth/signup
+POST {{BASE_URL}}/auth/signup
+Content-Type: application/json
+
+{
+  "name": "Saim",
+  "email": "saim@duck.com",
+  "password": "12345678"
+}
