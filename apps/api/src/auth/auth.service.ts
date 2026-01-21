@@ -1,14 +1,25 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
 import argon from "argon2"
 import { PrismaService } from '../prisma/prisma.service';
 import { SignupDto } from './dto/signup.dto';
+import { LoginDto } from './dto/login.dto';
+
 
 @Injectable()
 export class AuthService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService, private readonly jwtService: JwtService) { }
 
   private async hashPassword(password: string): Promise<string> {
     return await argon.hash(password);
+  }
+
+  private async comparePassword(hashedPassword: string, password: string): Promise<boolean> {
+    return await argon.verify(hashedPassword, password);
+  }
+
+  private async generateToken(payload: any): Promise<string> {
+    return await this.jwtService.signAsync(payload);
   }
 
   async signup(data: SignupDto): Promise<void> {
@@ -23,5 +34,20 @@ export class AuthService {
       }
       throw error;
     }
+  }
+
+  async login(data: LoginDto): Promise<string> {
+    const user = await this.prisma.user.findUnique({ where: { email: data.email } });
+    if (!user) {
+      throw new NotFoundException(`Invalid Credentials`);
+    }
+
+    const isValidPassword = await this.comparePassword(user.password, data.password);
+    if (!isValidPassword) {
+      throw new NotFoundException(`Invalid Credentials`);
+    }
+
+    const accessToken = await this.generateToken({ id: user.id });
+    return accessToken
   }
 }
