@@ -1,10 +1,11 @@
-import { Body, Controller, Post, Res, UsePipes } from '@nestjs/common';
+import { Body, Controller, Post, Res, UseGuards, UsePipes } from '@nestjs/common';
 import type { Response } from "express";
 import { AuthService } from './auth.service';
 import { ZodValidationPipe } from '../common/pipes/zod-validation.pipe';
 import { SignupSchema } from './dto/signup.dto';
 import { apiResponse } from 'src/utils';
 import { LoginSchema } from './dto/login.dto';
+import { AuthGuard } from '../common/guard/auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -29,6 +30,13 @@ export class AuthController {
       maxAge: 60 * 60 * 1000,
     })
     return apiResponse(200, { rest: { accessToken }, message: "Logged in successfully" })(res);
+  }
+
+  @Post("logout")
+  @UseGuards(AuthGuard)
+  handleLogout(@Res() res: Response): Response {
+    res.clearCookie("accessToken")
+    return apiResponse(200, { message: "Logged out successfully" })(res);
   }
 
 }
